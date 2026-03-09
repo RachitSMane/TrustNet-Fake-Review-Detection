@@ -1,94 +1,180 @@
 import streamlit as st
-from utils import score_review
+import requests
+from auth import register_user, authenticate
+
+API_URL = "http://127.0.0.1:8000"
+
+st.set_page_config(page_title="TrustNet Platform", layout="wide")
+
+# Session state
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
 
 # -----------------------------
-# Page Configuration
+# LOGIN PAGE
 # -----------------------------
-st.set_page_config(
-    page_title="Fake Review Detection System",
-    layout="centered"
-)
+
+def login_page():
+
+    st.title("🔐 TrustNet Login")
+
+    tab1, tab2 = st.tabs(["Login", "Register"])
+
+    # LOGIN
+    with tab1:
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+
+        if st.button("Login"):
+
+            if authenticate(username, password):
+                st.session_state.logged_in = True
+                st.session_state.user = username
+                st.success("Login successful")
+                st.rerun()
+
+            else:
+                st.error("Invalid username or password")
+
+    # REGISTER
+    with tab2:
+        new_user = st.text_input("New Username")
+        new_pass = st.text_input("New Password", type="password")
+
+        if st.button("Register"):
+
+            if register_user(new_user, new_pass):
+                st.success("Account created. Please login.")
+
+            else:
+                st.error("Username already exists")
+
 
 # -----------------------------
-# Title & Description
+# MAIN APP
 # -----------------------------
-st.title("🕵️ Fake Review Detection System")
-st.markdown(
-    """
-    This system analyzes online product reviews using **machine learning**
-    and **rule-based scoring** to detect potentially fake or suspicious reviews.
-    """
-)
 
-st.divider()
+def main_app():
 
-# -----------------------------
-# User Inputs
-# -----------------------------
-review_text = st.text_area(
-    "Enter the review text:",
-    height=150,
-    placeholder="Paste the review here..."
-)
+    st.sidebar.write(f"Logged in as **{st.session_state.user}**")
 
-rating = st.slider(
-    "Select the product rating:",
-    min_value=1,
-    max_value=5,
-    value=5
-)
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
 
-analyze_btn = st.button("🔍 Analyze Review")
+    page = st.sidebar.selectbox(
+        "Navigation",
+        ["Review Analyzer", "Analytics Dashboard", "Pricing"]
+    )
 
-# -----------------------------
-# Analysis Output
-# -----------------------------
-if analyze_btn:
-    if review_text.strip() == "":
-        st.warning("Please enter a review to analyze.")
-    else:
-        result = score_review(review_text, rating)
+    # -----------------------------
+    # REVIEW ANALYZER
+    # -----------------------------
+    if page == "Review Analyzer":
 
-        score = result["score"]
-        flag = result["flag"]
-        probability = result["ml_fake_probability"]
-        reasons = result["reasons"]
+        st.title("🕵️ Fake Review Detection System")
 
-        st.divider()
+        review = st.text_area("Enter Review")
 
-        # -----------------------------
-        # Flag Display
-        # -----------------------------
-        if flag == "GREEN":
-            st.success("🟢 **Status:** Review appears genuine")
-        elif flag == "YELLOW":
-            st.warning("🟡 **Status:** Review is suspicious")
-        else:
-            st.error("🔴 **Status:** Review is likely fake")
+        rating = st.slider("Rating", 1, 5, 5)
 
-        # -----------------------------
-        # Metrics & Visualizations
-        # -----------------------------
-        st.write("### AI Analysis Breakdown")
-        col1, col2 = st.columns(2)
-        
+        if st.button("Analyze Review"):
+
+            response = requests.post(
+                f"{API_URL}/analyze",
+                json={"review": review, "rating": rating}
+            )
+
+            result = response.json()
+
+            score = result["score"]
+            flag = result["flag"]
+            probability = result["ml_fake_probability"]
+            reasons = result["reasons"]
+
+            st.divider()
+
+            if flag == "GREEN":
+                st.success("🟢 Genuine Review")
+
+            elif flag == "YELLOW":
+                st.warning("🟡 Suspicious Review")
+
+            else:
+                st.error("🔴 Fake Review")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("Score", score)
+                st.progress(score / 100)
+
+            with col2:
+                st.metric("ML Fake Probability", round(probability * 100))
+                st.progress(probability)
+
+            st.write("### Reasons")
+
+            for r in reasons:
+                st.write("•", r)
+
+    # -----------------------------
+    # ANALYTICS DASHBOARD
+    # -----------------------------
+    elif page == "Analytics Dashboard":
+
+        st.title("📊 Fraud Analytics")
+
+        st.metric("Reviews Analyzed", "15,200")
+        st.metric("Fake Reviews Detected", "1,820")
+        st.metric("Fraud Rate", "11.9%")
+
+        st.bar_chart({
+            "Genuine": 12000,
+            "Suspicious": 1300,
+            "Fake": 1820
+        })
+
+    # -----------------------------
+    # PRICING PAGE
+    # -----------------------------
+    elif page == "Pricing":
+
+        st.title("💼 TrustNet Pricing")
+
+        col1, col2, col3 = st.columns(3)
+
         with col1:
-            st.metric("Heuristic Score", f"{score}/100")
-            st.progress(max(0, min(100, score)) / 100) # Clamp between 0-1.0
-            
-        with col2:
-            prob_pct = int(probability * 100)
-            st.metric("ML Fake Likelihood", f"{prob_pct}%")
-            st.progress(probability)
+            st.subheader("Go")
+            st.markdown("### ₹399 / month")
+            st.write("Small businesses")
+            st.write("✔ 5k reviews/month")
+            st.write("✔ Basic AI detection")
 
-        st.divider()
-        
-        # -----------------------------
-        # Explanation
-        # -----------------------------
-        st.write("#### 🧠 Decision Reasoning")
-        if reasons:
-            for reason in reasons:
-                st.info(f"🚩 {reason}")
-        else:
-            st.success("✅ No suspicious linguistic or structural patterns detected.")
+        with col2:
+            st.subheader("Plus")
+            st.markdown("### ₹1,999 / month")
+            st.write("Growing e-commerce stores")
+            st.write("✔ 50k reviews/month")
+            st.write("✔ API access")
+            st.write("✔ Analytics dashboard")
+
+        with col3:
+            st.subheader("Pro")
+            st.markdown("### ₹19,900 / month")
+            st.write("Large marketplaces")
+            st.write("✔ Unlimited reviews")
+            st.write("✔ Real-time monitoring")
+            st.write("✔ Enterprise support")
+
+
+# -----------------------------
+# ROUTER
+# -----------------------------
+
+if not st.session_state.logged_in:
+    login_page()
+
+else:
+    main_app()
