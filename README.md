@@ -29,24 +29,25 @@ It helps businesses and users identify fraudulent content and build trust in onl
 
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
+
+```
 TrustNet-Fake-Review-Detection/
 │
-├── app.py # Streamlit frontend
-├── api.py # Backend API server
-├── model.py # ML model logic
-├── auth.py # Authentication system
-├── utils.py # Helper functions
-├── users.json # User database
+├── app.py              # Streamlit frontend
+├── api.py              # Backend API server
+├── model.py            # ML model logic
+├── auth.py             # Authentication system
+├── utils.py            # Helper functions
+├── users.json          # User database
 │
-├── data/ # Dataset (if any)
-├── model/ # Saved ML models
-├── testing/ # Testing scripts
+├── data/               # Dataset (if any)
+├── model/              # Saved ML models
+├── testing/            # Testing scripts
 │
-├── README.md # Project documentation
-└── walkthrough.md # Project walkthrough
-
----
+├── README.md           # Project documentation
+└── walkthrough.md      # Project walkthrough
+```
 
 ## ⚙️ Installation & Setup
 
