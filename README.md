@@ -145,7 +145,6 @@ The system includes an analytics dashboard showing:
 
 ## 👥 Team
 
-- Your Name  
 - Rachit S Mane 
 - Ramneek.G 
 - Prithvi.W
